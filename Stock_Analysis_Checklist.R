@@ -39,15 +39,16 @@ key.statistics <- paste0("https://finance.yahoo.com/quote/", stck, "/key-statist
   read_html() %>%
   html_table() %>%
   map_df(bind_cols) %>%
-# Transpose
-t() %>%
-as_tibble()
+  # Transpose
+  t() %>%
+  as_tibble()
+
 # Set first row as column names
 colnames(key.statistics) <- key.statistics[1,]
 # Remove first row
 key.statistics <- key.statistics[-1,]
-# Add stock name column
-key.statistics$Stock_Name <- stck
+# Add Stock Ticker as a column
+key.statistics$'Stock Ticker' <- stck
 key.statistics[6]
 
 # 3. Cash Flow
@@ -114,6 +115,21 @@ df.mw$Stock_Name <- stock
 df.mw[2]
 df.mw[1]
 
+## Create a table to publish on dashboard
+abt <- cbind(key.statistics[60],key.statistics[6],cash.flow,
+           key.statistics[17], stock_health, key.statistics[46],
+           key.statistics[22],df.mw[2], df.mw[1])
+
+names(abt) <- c('Stock Ticker',
+              'Price/Sales ratio (P/S)', 
+              'Cash Flow', 
+              'Average daily volume (shares)',
+              'Fundamental Health Grade',
+              'Got Growth?',
+              'Institutional Ownership',
+              'Number of Analysts making recommendations',
+              'Average recommendation'
+)
 ## Part 2: Advanced Research & Analysis ##
 
 # 1. Gross Margin Trend
