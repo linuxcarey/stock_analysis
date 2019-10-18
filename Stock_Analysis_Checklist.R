@@ -6,6 +6,7 @@ library(tidyquant)
 library(rvest)
 library(xml2)
 library(glue)
+library(tibble)
 
 # tidyquant: https://cran.r-project.org/web/packages/tidyquant/vignettes/TQ01-core-functions-in-tidyquant.html
 
@@ -60,10 +61,12 @@ cash.flow <- glue("https://www.marketwatch.com/investing/Stock/",{company},"/pro
   html_nodes(xpath='//*[@class="section"]') %>%
 #   html_nodes(xpath='//*[@class="column"]') %>% .[[10]] %>%
 #  html_text() %>%
-html_nodes(xpath='//*[@class="data lastcolumn"]') %>% .[[8]]%>%
-html_text()
+  html_nodes(xpath='//*[@class="data lastcolumn"]') %>% .[[8]] %>%
+  html_text() %>% 
+  enframe(name = NULL)
 
-cash.flow
+
+names(cash.flow) <- c('Cash Flow') 
 
 # 4. Average Daily Volume (shares)
 # O.K. to buy if Average Daily Volume is 150,000 shares or higher, and above one million shares is best.
@@ -73,14 +76,15 @@ key.statistics[17]
 # 5. Fundamental Health Grade
 # www.Investorplace.com
 
-stock_health  <- paste("https://investorplace.com/stock-quotes/", stck, "-stock-quote/") %>%
-read_html() %>%
-html_nodes(xpath='//*[@class="stock-aside"]') %>%
-html_nodes(xpath='//*[@class="grade grade-color"]') %>%
-html_nodes(xpath='//*[@class="grade-color stock-grade-rating"]') %>%
-html_text()
+stock.health  <- paste("https://investorplace.com/stock-quotes/", stck, "-stock-quote/") %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@class="stock-aside"]') %>%
+  html_nodes(xpath='//*[@class="grade grade-color"]') %>%
+  html_nodes(xpath='//*[@class="grade-color stock-grade-rating"]') %>%
+  html_text() %>% 
+  enframe(name = NULL)
 
-stock_health
+names(stock.health) <- c('Stock Health') 
 
 # 6. Got Growth?
 # Best case is when year-over-year (YoY) growth is accelerating.
@@ -97,7 +101,7 @@ key.statistics[22]
 # not whether there are more buys than holds, etc. 
 
 # Extract and transform data
-df.mw <- paste0("https://www.marketwatch.com/investing/Stock/", stck, "/analystestimates") %>%
+recs <- paste0("https://www.marketwatch.com/investing/Stock/", stck, "/analystestimates") %>%
   read_html() %>%
   html_table() %>%
   map_df(bind_cols) %>%
@@ -105,20 +109,20 @@ df.mw <- paste0("https://www.marketwatch.com/investing/Stock/", stck, "/analyste
   t() %>%
   as_tibble()
 
-df.mw <- df.mw[1:2,1:5]
+recs <- recs[1:2,1:5]
 # Set first row as column names
-colnames(df.mw) <- df.mw[1,]
+colnames(recs) <- recs[1,]
 # Remove first row
-df.mw <- df.mw[-1,]
+recs <- recs[-1,]
 # Add stock name column
-df.mw$Stock_Name <- stock
-df.mw[2]
-df.mw[1]
+recs$Stock_Name <- stock
+recs[2]
+recs[1]
 
 ## Create a table to publish on dashboard
 abt <- cbind(key.statistics[60],key.statistics[6],cash.flow,
-           key.statistics[17], stock_health, key.statistics[46],
-           key.statistics[22],df.mw[2], df.mw[1])
+           key.statistics[17], stock.health, key.statistics[46],
+           key.statistics[22],recs[2])
 
 names(abt) <- c('Stock Ticker',
               'Price/Sales ratio (P/S)', 
@@ -127,9 +131,55 @@ names(abt) <- c('Stock Ticker',
               'Fundamental Health Grade',
               'Got Growth?',
               'Institutional Ownership',
-              'Number of Analysts making recommendations',
-              'Average recommendation'
-)
+              'Number of Analysts making recommendations'
+              )
+# Create a row with reasons per metric
+row.why <- c('Stock Ticker',
+             'Valuation check. A stock with a P/S above 10 is momentum priced. Buying momentum priced stocks is only recommended in a strong market',
+             'Companies with positive operating cash flow are safer investments than cash burners (negative cash flow).', 
+             'Institutional buying is an important catalyst for share price growth.
+             Institutions buy hundreds of thousands of shares and prefer stocks with
+             large daily trading volumes so they can easily move in and out of positions.',
+             'Invest, don’t gamble! Stick with companies with solid fundamentals.',
+             'Consistent strong sales growth over extended periods translates to long term stock price appreciation.',
+             'Lack of institutional ownership means mutual funds, pension plans and other institutional
+             buyers don’t think they will make money owning the stock.
+             Why would you want to own it?',
+             'A company’s performance will go unrewarded if nobody knows about it.
+             Sufficient analyst coverage is essential to create investor interest,
+             especially from institutions.'
+             )
+
+# Create a row with actions per metric
+
+row.action <- c('Stock Ticker',
+                'O.K. to buy if P/S is less than 10. P/S ratios between 3 and 5 are best for growth stocks.
+                Ratios below 2 reflect value priced stocks.',
+                'O.K. to buy if Cash Flow is a positive number.', 
+                'O.K. to buy if Average Daily Volume is 150,000 shares or higher, and above one million shares is best.',
+                'O.K. to buy if Fundamental Grade = A, B or C',
+                'O.K. to buy if recent quarterly growth numbers are 8% min. (higher is better). Best case is when year-over-year
+                (YoY) growth is accelerating.',
+                'O.K. to buy if percent held by institutions is at least 30% of shares outstanding.',
+                'O.K. to buy if a total of at least 4 analysts are listed as currently making strong buy, buy, hold,
+                underperform, or sell recommendations. Look only at the total number of analysts making recommendations,
+                not whether there are more buys than holds, etc.'
+                )
+# Bind together abt to the action and reason per metric
+abt <- rbind(abt, row.why, row.action)
+
+# ABT column names as DF
+n <- as.data.frame(colnames(abt))
+
+# Transpose ABT
+t.abt <- as.data.frame(t(abt))
+
+#Bind column nameas a 1st column and transposed ABT
+t.abt <- cbind(n,t.abt)
+
+# Rename column names from above table 
+names(t.abt) <- c('What is the metric','Values','Reason', 'Action')
+
 ## Part 2: Advanced Research & Analysis ##
 
 # 1. Gross Margin Trend
