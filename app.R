@@ -2,6 +2,8 @@ library(shiny)
 library(ggplot2)
 library(DT)
 
+t.abt <- read.csv("t.abt.csv")
+
 server <- function(input, output, session) {
   
   output$tableDT <- DT::renderDataTable(t.abt,

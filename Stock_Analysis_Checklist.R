@@ -15,7 +15,7 @@ library(tibble)
 # List all available metrics from Yahoo finance
 # O.K. to buy if stock price is above its 50-day moving average.
 
-company <- c("FNV")
+company <- c("TWTR")
 
 # use getsymbols() to convert a char
 stck <- getSymbols(company)
@@ -189,7 +189,7 @@ names(t.abt) <- c('What is the metric','Values','Reason', 'Action')
 # Ignore variations of less than 1%, e.g. from 41% to 40.5%.
 
 # Quarterly Income Statement
-incstat.qtr <- paste0("https://www.marketwatch.com/investing/Stock/", "FNV", "/financials/income/quarter") %>%
+incstat.qtr <- paste0("https://www.marketwatch.com/investing/Stock/", stck, "/financials/income/quarter") %>%
   read_html() %>%
   html_table() %>%
   map_df(bind_cols)
@@ -218,7 +218,7 @@ incstat.gig <- incstat.qtr[grep("Gross Income Growth", incstat.qtr[,1]),]
 # But, it's O.K. to buy if MRQ growth is at least 75% of recent growth numbers
 
 # Yearly income statement
-incstat.yr <- paste0("https://www.marketwatch.com/investing/Stock/", "FNV", "/financials") %>%
+incstat.yr <- paste0("https://www.marketwatch.com/investing/Stock/", stck, "/financials") %>%
   read_html() %>%
   html_table() %>%
   map_df(bind_cols)
@@ -267,7 +267,7 @@ rev.est.grw <- rev.est[grep("Growth", rev.est[,1]),]
 # Ignore increases that are less than 5%, e.g. from 60% to 64%
 
 # Balance Sheet yearly
-bs.yr <- paste0("https://www.marketwatch.com/investing/Stock/", "FNV", "/financials/balance-sheet") %>% 
+bs.yr <- paste0("https://www.marketwatch.com/investing/Stock/", stck, "/financials/balance-sheet") %>% 
   read_html() %>% 
   html_table() %>% 
   map_df(bind_cols)
@@ -293,7 +293,7 @@ bs.yr.ar <- bs.yr[grep("Total Accounts Receivable", bs.yr[,1]),]
 rev.yr <- incstat.yr[grep("Revenue", incstat.yr[,1]),]
 
 # Balance Sheet quarterly
-bs.qtr <- paste0("https://www.marketwatch.com/investing/Stock/", "FNV", "/financials/balance-sheet") %>% 
+bs.qtr <- paste0("https://www.marketwatch.com/investing/Stock/", stck, "/financials/balance-sheet/quarter") %>% 
   read_html() %>% 
   html_table() %>% 
   map_df(bind_cols)
