@@ -7,6 +7,7 @@ library(rvest)
 library(xml2)
 library(glue)
 library(tibble)
+library(data.table)
 
 # tidyquant: https://cran.r-project.org/web/packages/tidyquant/vignettes/TQ01-core-functions-in-tidyquant.html
 
@@ -266,7 +267,10 @@ rev.est.grw <- rev.est[grep("Growth", rev.est[,1]),]
 # buy if the ratio is the same or lower than year-ago. 
 # Ignore increases that are less than 5%, e.g. from 60% to 64%
 
-# Balance Sheet yearly
+################  Extraction + Transformation section ################  
+####
+
+# Balance Sheet - yearly
 bs.yr <- paste0("https://www.marketwatch.com/investing/Stock/", stck, "/financials/balance-sheet") %>% 
   read_html() %>% 
   html_table() %>% 
@@ -283,13 +287,13 @@ bs.yr11 <- cbind(bs.yr10[8],bs.yr10[2:6])
 names(bs.yr20)[1] <- "account_name"
 names(bs.yr11)[1] <- "account_name"
 
-## appending the 2 tables from section row 146
+## appending the 2 tables from above subsetting section 
 bs.yr <- rbind(bs.yr20,bs.yr11)
 
 # Select account name "accounts receivable"
 bs.yr.ar <- bs.yr[grep("Total Accounts Receivable", bs.yr[,1]),]
 
-# select revenue from Inc Statement yearly
+# select revenue from Income Statement yearly
 rev.yr <- incstat.yr[grep("Revenue", incstat.yr[,1]),]
 
 # Balance Sheet quarterly
@@ -317,3 +321,46 @@ bs.qtr.ar <- bs.qtr[grep("Total Accounts Receivable", bs.qtr[,1]),]
 
 # select revenue from Inc Statement yearly
 rev.qtr <- incstat.qtr[grep("Revenue", incstat.qtr[,1]),]
+
+################  Calculation section ################  
+
+################ accounts receivable ################
+################
+#################
+# Transpose data
+bs.qtr.ar.t <- as.data.frame(t(bs.qtr.ar))
+#move rowname to be 1st column
+setDT(bs.qtr.ar.t, keep.rownames = TRUE)[]
+#set AR column to be character
+bs.qtr.ar.t[]<- lapply(bs.qtr.ar.t, as.character)
+bs.qtr.ar.t <- cbind(rownames(bs.qtr.ar.t), data.frame(bs.qtr.ar.t, row.names=NULL))
+colnames(bs.qtr.ar.t) <- bs.qtr.ar.t[1,]
+#move row1 to be column name
+bs.qtr.ar.t <- bs.qtr.ar.t[-1, ] 
+#remove first column
+bs.qtr.ar.t <- bs.qtr.ar.t[-1]
+#remove character within numbers
+bs.qtr.ar.t[2] <- as.numeric(gsub("\\M", "", bs.qtr.ar.t$`Total Accounts Receivable`)) 
+
+################ Sales ################
+################
+################
+# Transpose data
+rev.qtr.t <- as.data.frame(t(rev.qtr))
+#move rowname to be 1st column
+setDT(rev.qtr.t, keep.rownames = TRUE)[]
+#set AR column to be character
+rev.qtr.t[]<- lapply(rev.qtr.t, as.character)
+rev.qtr.t <- cbind(rownames(rev.qtr.t), data.frame(rev.qtr.t, row.names=NULL))
+colnames(rev.qtr.t) <- rev.qtr.t[1,]
+#move row1 to be column name
+rev.qtr.t <- rev.qtr.t[-1, ] 
+#remove first column
+rev.qtr.t <- rev.qtr.t[-1]
+#remove character within numbers
+rev.qtr.t[2] <- as.numeric(gsub("\\M", "", rev.qtr.t$`Sales/Revenue`)) 
+
+#Join AR to Sales
+ar.sales <- inner_join(bs.qtr.ar.t,rev.qtr.t, by="account_name")
+ar.sales$ratio <- round(ar.sales$`Total Accounts Receivable`/ar.sales$`Sales/Revenue`, digits = 3)*100
+
