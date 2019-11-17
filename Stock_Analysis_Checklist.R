@@ -2,7 +2,8 @@
 # http://www.winninginvesting.com/stock_analysis_checklist.htm
 
 library(quantmod)
-library(tidyquant)
+#library(tidyquant)
+library(tidyverse)
 library(rvest)
 library(xml2)
 library(glue)
@@ -12,11 +13,35 @@ library(data.table)
 # tidyquant: https://cran.r-project.org/web/packages/tidyquant/vignettes/TQ01-core-functions-in-tidyquant.html
 
 ## Part 1: Basic Research ##
+
+# 0. Get company name and description
+company <- c("TWTR")
+
+# Company name
+cmpny.name <- "https://www.marketwatch.com/investing/stock/twtr/profile" %>% 
+  read_html() %>%
+  html_nodes(xpath='//*[(@id = "instrumentname")]') %>%
+  html_text() %>% 
+  enframe(name = NULL)
+
+# Company description
+cmpny.desc <- "https://www.marketwatch.com/investing/Stock/twtr/profile/" %>%
+  read_html() %>%
+  html_nodes(xpath='//*[contains(concat( " ", @class, " " ), concat( " ", "limited", " " ))]') %>%
+  html_text() %>% 
+  enframe(name = NULL)  
+
+# Bind name and description
+cmpy <- cbind(cmpny.name,cmpny.desc,'','')
+
+# Rename column names from above table 
+names(cmpy) <- c('What is the metric','Values','Reason', 'Action')
+
+
 # 1. One-year Price chart with 50-day moving average
 # List all available metrics from Yahoo finance
 # O.K. to buy if stock price is above its 50-day moving average.
 
-company <- c("TWTR")
 
 # use getsymbols() to convert a char
 stck <- getSymbols(company)
@@ -120,7 +145,7 @@ recs$Stock_Name <- stock
 recs[2]
 recs[1]
 
-## Create a table to publish on dashboard
+## Create the Analytics Base Table (ABT), to be published on a dashboard
 abt <- cbind(key.statistics[60],key.statistics[6],cash.flow,
            key.statistics[17], stock.health, key.statistics[46],
            key.statistics[22],recs[2])
@@ -180,6 +205,9 @@ t.abt <- cbind(n,t.abt)
 
 # Rename column names from above table 
 names(t.abt) <- c('What is the metric','Values','Reason', 'Action')
+
+# Final ABT
+t.abt <- rbind(cmpy, t.abt)
 
 ## Part 2: Advanced Research & Analysis ##
 
