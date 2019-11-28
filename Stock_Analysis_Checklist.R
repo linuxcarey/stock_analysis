@@ -32,10 +32,11 @@ cmpny.desc <- "https://www.marketwatch.com/investing/Stock/twtr/profile/" %>%
   enframe(name = NULL)  
 
 # Bind name and description
-cmpy <- cbind(cmpny.name,cmpny.desc,'','')
+cmpy <- cbind(cmpny.name,cmpny.desc)
 
+## OUTPUT 1##
 # Rename column names from above table 
-names(cmpy) <- c('What is the metric','Values','Reason', 'Action')
+names(cmpy) <- c('Company Name','Description')
 
 
 # 1. One-year Price chart with 50-day moving average
@@ -203,11 +204,10 @@ t.abt <- as.data.frame(t(abt))
 #Bind column nameas a 1st column and transposed ABT
 t.abt <- cbind(n,t.abt)
 
+## OUTPUT 2##
+# Final ABT
 # Rename column names from above table 
 names(t.abt) <- c('What is the metric','Values','Reason', 'Action')
-
-# Final ABT
-t.abt <- rbind(cmpy, t.abt)
 
 ## Part 2: Advanced Research & Analysis ##
 
