@@ -9,6 +9,7 @@ library(xml2)
 library(glue)
 library(tibble)
 library(data.table)
+library(scales)
 
 # tidyquant: https://cran.r-project.org/web/packages/tidyquant/vignettes/TQ01-core-functions-in-tidyquant.html
 
@@ -52,6 +53,8 @@ stockEnv <- new.env()
 symbols <- getSymbols(stck, src='yahoo', env=stockEnv)
 
 # O.K. to buy if stock price is above its 50-day moving average.
+
+## OUTPUT 1 A##
 
 for (stock in ls(stockEnv)){
 chartSeries(stockEnv[[stock]], theme="white", name=stock,
@@ -146,7 +149,12 @@ recs$Stock_Name <- stock
 recs[2]
 recs[1]
 
-## Create the Analytics Base Table (ABT), to be published on a dashboard
+## Create the Analytics Base Table (ABT), to be published on a dashboard ##
+################
+################
+
+# Append parts
+
 abt <- cbind(key.statistics[60],key.statistics[6],cash.flow,
            key.statistics[17], stock.health, key.statistics[46],
            key.statistics[22],recs[2])
@@ -202,12 +210,12 @@ n <- as.data.frame(colnames(abt))
 t.abt <- as.data.frame(t(abt))
 
 #Bind column nameas a 1st column and transposed ABT
-t.abt <- cbind(n,t.abt)
+part1.abt <- cbind(n,t.abt)
 
 ## OUTPUT 2##
 # Final ABT
 # Rename column names from above table 
-names(t.abt) <- c('What is the metric','Values','Reason', 'Action')
+names(part1.abt) <- c('What is the metric','Values','Reason', 'Action')
 
 ## Part 2: Advanced Research & Analysis ##
 
@@ -222,6 +230,7 @@ incstat.qtr <- paste0("https://www.marketwatch.com/investing/Stock/", stck, "/fi
   read_html() %>%
   html_table() %>%
   map_df(bind_cols)
+
 #Subsetting the table into 2 tables
 incstat.qtr10 <-   incstat.qtr[is.na(incstat.qtr[,1]),]
 incstat.qtr20 <-   incstat.qtr[!is.na(incstat.qtr[,1]),1:6]
@@ -237,7 +246,7 @@ names(incstat.qtr11)[1] <- "account_name"
 incstat.qtr <- rbind(incstat.qtr20,incstat.qtr11)
 
 # Select account name "Gross Income Growth"
-incstat.gig <- incstat.qtr[grep("Gross Income Growth", incstat.qtr[,1]),]
+part2.1.gig <- incstat.qtr[grep("Gross Income Growth", incstat.qtr[,1]),]
 
 # 2.Revenue (sales) Growth Rate Latest Quarter compared
 # to previous quarter & most recent year.
@@ -265,13 +274,12 @@ names(incstat.yr11)[1] <- "account_name"
 
 # appending the 2 tables from above section
 incstat.yr <- rbind(incstat.yr20,incstat.yr11)
-str(incstat.yr)
 
 # Quarterly sales growth
-incstat.revg <- incstat.qtr[grep("Sales Growth", incstat.qtr[,1]),]
+part2.2.qtr.revg <- incstat.qtr[grep("Sales Growth", incstat.qtr[,1]),]
 
 # Yearly sales growth
-incstat.yr.revg <- incstat.yr[grep("Sales Growth", incstat.yr[,1]),]
+part2.2.yr.revg <- incstat.yr[grep("Sales Growth", incstat.yr[,1]),]
 
 #3. Forecast Revenue Growth Rate
 # Compare consensus revenue growth forecasts to historical numbers.
@@ -285,7 +293,7 @@ key.analysis <- paste0("https://finance.yahoo.com/quote/", stck, "/analysis?p=",
 rev.est <- data.frame(key.analysis[2])
 
 # revenue estimate growth
-rev.est.grw <- rev.est[grep("Growth", rev.est[,1]),]
+part2.3.rev.est.grw <- rev.est[grep("Growth", rev.est[,1]),]
 
 #4. Accounts receivables growth vs sales growth
 # Accounts Receivables Ratio (ratio) is the total receivables 
@@ -296,7 +304,8 @@ rev.est.grw <- rev.est[grep("Growth", rev.est[,1]),]
 # Ignore increases that are less than 5%, e.g. from 60% to 64%
 
 ################  Extraction + Transformation section ################  
-####
+################
+################
 
 # Balance Sheet - yearly
 bs.yr <- paste0("https://www.marketwatch.com/investing/Stock/", stck, "/financials/balance-sheet") %>% 
@@ -354,19 +363,25 @@ rev.qtr <- incstat.qtr[grep("Revenue", incstat.qtr[,1]),]
 
 ################ accounts receivable ################
 ################
-#################
+################
+
 # Transpose data
 bs.qtr.ar.t <- as.data.frame(t(bs.qtr.ar))
+
 #move rowname to be 1st column
 setDT(bs.qtr.ar.t, keep.rownames = TRUE)[]
+
 #set AR column to be character
 bs.qtr.ar.t[]<- lapply(bs.qtr.ar.t, as.character)
 bs.qtr.ar.t <- cbind(rownames(bs.qtr.ar.t), data.frame(bs.qtr.ar.t, row.names=NULL))
 colnames(bs.qtr.ar.t) <- bs.qtr.ar.t[1,]
+
 #move row1 to be column name
 bs.qtr.ar.t <- bs.qtr.ar.t[-1, ] 
+
 #remove first column
 bs.qtr.ar.t <- bs.qtr.ar.t[-1]
+
 #remove character within numbers
 bs.qtr.ar.t[2] <- as.numeric(gsub("\\M", "", bs.qtr.ar.t$`Total Accounts Receivable`)) 
 
@@ -375,20 +390,55 @@ bs.qtr.ar.t[2] <- as.numeric(gsub("\\M", "", bs.qtr.ar.t$`Total Accounts Receiva
 ################
 # Transpose data
 rev.qtr.t <- as.data.frame(t(rev.qtr))
+
 #move rowname to be 1st column
 setDT(rev.qtr.t, keep.rownames = TRUE)[]
+
 #set AR column to be character
 rev.qtr.t[]<- lapply(rev.qtr.t, as.character)
 rev.qtr.t <- cbind(rownames(rev.qtr.t), data.frame(rev.qtr.t, row.names=NULL))
 colnames(rev.qtr.t) <- rev.qtr.t[1,]
+
 #move row1 to be column name
 rev.qtr.t <- rev.qtr.t[-1, ] 
+
 #remove first column
 rev.qtr.t <- rev.qtr.t[-1]
+
 #remove character within numbers
 rev.qtr.t[2] <- as.numeric(gsub("\\M", "", rev.qtr.t$`Sales/Revenue`)) 
 
 #Join AR to Sales
 ar.sales <- inner_join(bs.qtr.ar.t,rev.qtr.t, by="account_name")
-ar.sales$ratio <- round(ar.sales$`Total Accounts Receivable`/ar.sales$`Sales/Revenue`, digits = 3)*100
+ar.sales$ratio <- percent(round(ar.sales$`Total Accounts Receivable`/ar.sales$`Sales/Revenue`, digits = 3))
+ar.sales <- ar.sales %>% select("account_name","ratio")
 
+# ABT column names as DF
+n <- as.data.frame(colnames(ar.sales))
+
+# Transpose ABT
+t.ar.sales <- as.data.frame(t(ar.sales))
+
+#Bind column nameas a 1st column and transposed ABT
+part2.4.ar.sales <- cbind(n,t.ar.sales)
+
+#convert from factor to character
+part2.4.ar.sales[] <- lapply(part2.4.ar.sales, as.character)
+names(part2.4.ar.sales) <- lapply(part2.4.ar.sales[1,], as.character)
+
+#move row1 to be column name
+part2.4.ar.sales <- part2.4.ar.sales[-1, ] 
+
+#rename cell title 
+part2.4.ar.sales[1,1] <- "Ratio AR to Sales"
+
+## Create the Analytics Base Table (ABT), to be published on a dashboard ##
+################
+################
+
+# Append parts 1,2,3,4 
+
+part2.abt <- rbind(part2.1.gig
+                   , part2.2.qtr.revg
+                  # , part2.3.rev.est.grw
+                  , part2.4.ar.sales)
