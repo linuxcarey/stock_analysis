@@ -19,14 +19,14 @@ library(scales)
 company <- c("TWTR")
 
 # Company name
-cmpny.name <- "https://www.marketwatch.com/investing/stock/twtr/profile" %>% 
+cmpny.name <- paste0("https://www.marketwatch.com/investing/Stock/", stck,"/profile") %>% 
   read_html() %>%
   html_nodes(xpath='//*[(@id = "instrumentname")]') %>%
   html_text() %>% 
   enframe(name = NULL)
 
 # Company description
-cmpny.desc <- "https://www.marketwatch.com/investing/Stock/twtr/profile/" %>%
+cmpny.desc <- paste0("https://www.marketwatch.com/investing/Stock/", stck,"/profile") %>% 
   read_html() %>%
   html_nodes(xpath='//*[contains(concat( " ", @class, " " ), concat( " ", "limited", " " ))]') %>%
   html_text() %>% 
