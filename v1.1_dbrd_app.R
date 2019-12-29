@@ -30,7 +30,7 @@ ui <- navbarPage(
                textInput("symb", "Symbol", "FNV"),
                tableOutput("cmpname"),
                tableOutput("cmpdesc")
-             ),
+               ),
              mainPanel(
                # Basic Analysis 
                # 1
@@ -112,13 +112,59 @@ ui <- navbarPage(
                , tableOutput("stat07rsn")
                , tags$strong("Action")
                , tableOutput("stat07actn")
+               , tags$p()
              )
            )
   ),
   tabPanel("Advanced Research & Analysis - Part 2",
            sidebarLayout(
-             sidebarPanel(),
-             mainPanel()
+             sidebarPanel(
+               
+             ),
+             mainPanel(
+               # Advanced Analysis 
+               # 1
+               tags$strong("1. Gross Margin Trend")
+               , tags$p()
+               , tableOutput("advstat01")
+               , tags$p()
+               , tags$strong("Reason")
+               , tableOutput("advstat01rsn")
+               , tags$strong("Action")
+               , tableOutput("advstat01actn")
+               , tags$p()
+               # 2
+               , tags$strong("Revenue (sales) Growth Rate Latest Quarter compared 
+                             to previous quarter & most recent year.")
+               , tags$p()
+               , tableOutput("advstat02")
+               , tags$p()
+               , tags$strong("Reason")
+               , tableOutput("advstat02rsn")
+               , tags$strong("Action")
+               , tableOutput("advstat02actn")
+               , tags$p()
+               # 3
+               , tags$strong("3. Forecast Revenue Growth Rate")
+               , tags$p()
+               , tableOutput("advstat03")
+               , tags$p()
+               , tags$strong("Reason")
+               , tableOutput("advstat03rsn")
+               , tags$strong("Action")
+               , tableOutput("advstat03actn")
+               , tags$p()
+               # 4
+               , tags$strong("4. Accounts receivables growth vs sales growth")
+               , tags$p()
+               , tableOutput("advstat04")
+               , tags$p()
+               , tags$strong("Reason")
+               , tableOutput("advstat04rsn")
+               , tags$strong("Action")
+               , tableOutput("advstat04actn")
+               , tags$p()
+             )
            )
   ),
   tabPanel("Acknowledments",
@@ -177,7 +223,7 @@ server <- function(input, output) {
   output$cmpaction <- renderTable( paste('O.K. to buy if stock price is above its 50-day moving average.')
                                    , colnames = FALSE
   )
-  ## key statistics
+  ## Basic Analysis - key statistics
   # Price to Sales
   output$stat01 <- renderTable(
     paste0("https://finance.yahoo.com/quote/", input$symb, "/key-statistics?p=", input$symb) %>%
@@ -285,9 +331,9 @@ server <- function(input, output) {
   
   output$stat05actn <- renderTable(
     paste("O.K. to buy if recent quarterly growth numbers are 8% min. (higher is better). 
-Best case is when year-over-year (YoY) growth is accelerating.")
+          Best case is when year-over-year (YoY) growth is accelerating.")
     , colnames = FALSE
-  )
+    )
   # Institutional ownership
   output$stat06 <- renderTable(
     paste0("https://finance.yahoo.com/quote/", input$symb, "/key-statistics?p=", input$symb) %>%
@@ -296,14 +342,14 @@ Best case is when year-over-year (YoY) growth is accelerating.")
       map_df(bind_cols) %>%
       # Transpose
       t() %>%
-      as_tibble() 
-    %>% dplyr::select(" " = V22)
+      as_tibble() %>% 
+	  select(" " = V22)
     
   )
   output$stat06rsn <- renderTable(
     paste("Lack of institutional ownership means mutual funds, pension plans and other institutional
-             buyers don’t think they will make money owning the stock.
-             Why would you want to own it?")
+          buyers don’t think they will make money owning the stock.
+          Why would you want to own it?")
     , colnames = FALSE
     )
   
@@ -319,8 +365,8 @@ Best case is when year-over-year (YoY) growth is accelerating.")
       html_nodes(xpath='//td | //*[contains(concat( " ", @class, " " ), concat( " ", "divider", " " ))]') %>%
       html_text() %>%
       enframe(name = NULL) %>% 
-      dplyr::rename('Number of Ratings' = value)
-    %>% dplyr::slice(7)
+      rename('Number of Ratings' = value) %>% 
+	  slice(7)
     ,
     width = "auto", colnames = TRUE
   )
@@ -339,6 +385,90 @@ Best case is when year-over-year (YoY) growth is accelerating.")
     , colnames = FALSE
     )
   
+  ## Advanced Analysis - key statistics
+  # Gross Margin Trend
+  output$advstat01 <- renderTable(
+    paste0("https://www.marketwatch.com/investing/Stock/", input$symb, "/financials/income/quarter") %>%
+      read_html() %>%
+      html_table() %>%
+      map_df(dplyr::bind_cols)%>% 
+      select(1:5) %>% 
+      slice(10)
+    
+  )
+  output$advstat01rsn <- renderTable( 
+    paste("Increasing gross margins signal an improving competitive position, 
+          and declining margins warn of increasing competition.")
+    , colnames = FALSE
+    )
+  
+  output$advstat01actn <- renderTable(
+    paste("O.K. to buy if the trend is flat or increasing (best). 
+          Ignore variations of less than 1%, e.g. from 41% to 40.5%.")
+    , colnames = FALSE
+    )
+  # Revenue growth rate latest quarter compared
+  output$advstat02 <- renderTable(
+    paste0("https://www.marketwatch.com/investing/Stock/", input$symb, "/financials") %>%
+      read_html() %>%
+      html_table() %>%
+      map_df(bind_cols) %>% 
+      select(1:5) %>%
+      slice(2)
+    
+      )
+  
+  output$advstat02rsn <- renderTable(
+    paste("Compare the most recent quarter's (MRQ) year-overyear sales growth 
+rate to previous quarters and to the most recent year.")
+    , colnames = FALSE
+    )
+  
+  output$advstat02actn <- renderTable(
+    paste("Ideally, revenue growth would be accelerating or at least equal to earlier numbers.
+           But, it's O.K. to buy if MRQ growth is at least 75% of recent growth numbers.")
+    , colnames = FALSE
+  )
+  # Forecast revenue growth rate 
+  output$advstat03 <- renderTable(
+       paste0("https://finance.yahoo.com/quote/", input$symb, "/analysis?p=", input$symb) %>%
+        read_html() %>%
+        html_table() %>%
+        .[[2]] %>% 
+        slice(6)
+   
+  )
+  
+  output$advstat03rsn <- renderTable(
+    paste("Compare consensus revenue growth forecasts to historical numbers.")
+    , colnames = FALSE
+    )
+  
+  output$advstat03actn <- renderTable(
+    paste("Ideally, the growth rate should be accelerating but it's O.K. to buy 
+          if the forecast year-overyear revenue growth is at least
+          75% of historical year-over-year growth.")
+    , colnames = FALSE
+  )
+  # Accounts receivables growth vs sales growth
+  output$advstat04 <- renderTable(
+    
+  )
+  
+  output$advstat04rsn <- renderTable(
+    paste("Accounts Receivables Ratio (ratio) is the total receivables 
+ divided by the revenue for the same quarter
+ ratio for the most recent and the year-ago quarters.")
+    , colnames = FALSE
+  )
+  
+  output$advstat04actn <- renderTable(
+    paste("Ideally the most recent ratio would be less than year ago, but it's O.K. to
+          buy if the ratio is the same or lower than year-ago. 
+          Ignore increases that are less than 5%, e.g. from 60% to 64%.")
+    , colnames = FALSE
+  )
+    
 }
 
 # Run the app
