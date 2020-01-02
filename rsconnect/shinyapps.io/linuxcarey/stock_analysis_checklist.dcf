@@ -1,0 +1,13 @@
+name: stock_analysis_checklist
+title: stock_analysis_checklist
+username:
+account: linuxcarey
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1625259
+bundleId: 2702129
+url: https://linuxcarey.shinyapps.io/stock_analysis_checklist/
+when: 1577973152.97195
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .RData|README.md|Stock_Analysis_Checklist.R|code/stockvis_app.R|dashboards/v1.1_dbrd_app.R|dashboards/v1_dbrd_app.R|dashboards/v2_dbrd_app.R|unit_test/shniy_unit_test.r|unit_test/shniy_unit_test2.r|unit_test/shniy_unit_test3.r
